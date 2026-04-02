@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🍽️ Mess Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --bg:#f0f4ff;--card:#fff;--border:#dde3f4;
+  --text:#0f1740;--muted:#7a85a3;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue-l:#edf2ff;
+  --green:#0ca678;--green-l:#e6fcf5;
+  --red:#e03131;--red-l:#fff5f5;
+  --sh:0 2px 14px rgba(15,23,64,.08);
+  --sh-lg:0 8px 36px rgba(15,23,64,.14);
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 700px 500px at 10% 20%,rgba(59,91,219,.07) 0%,transparent 70%),
+  radial-gradient(ellipse 500px 400px at 90% 80%,rgba(112,72,232,.07) 0%,transparent 65%),
+  radial-gradient(ellipse 400px 300px at 50% 50%,rgba(12,166,120,.04) 0%,transparent 60%);pointer-events:none;}
+.bg-svg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-svg svg{width:100%;height:100%;}
+
+/* ── SETUP SCREEN ── */
+.setup-screen{
+  position:fixed;inset:0;z-index:500;
+  background:linear-gradient(145deg,#0d1b4b,#1e3a8a,#3b5bdb);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;overflow-y:auto;
+}
+.setup-screen.hidden{display:none;}
+.setup-logo{font-size:52px;margin-bottom:10px;}
+.setup-title{color:#fff;font-size:24px;font-weight:800;margin-bottom:4px;text-align:center;}
+.setup-sub{color:rgba(255,255,255,.5);font-size:13px;margin-bottom:24px;text-align:center;line-height:1.6;}
+.setup-card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r);padding:22px;width:100%;max-width:380px;backdrop-filter:blur(10px);}
+.setup-label{color:rgba(255,255,255,.7);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.setup-inp{
+  width:100%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
+  border-radius:10px;padding:11px 15px;color:#fff;font-family:inherit;
+  font-size:15px;font-weight:600;outline:none;margin-bottom:14px;
+}
+.setup-inp::placeholder{color:rgba(255,255,255,.35);}
+.setup-inp:focus{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.2);}
+
+/* Members list in setup */
+.setup-members-box{background:rgba(0,0,0,.15);border-radius:11px;padding:10px;margin-bottom:12px;}
+.setup-member-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.setup-member-row:last-child{margin-bottom:0;}
+.setup-member-inp{
+  flex:1;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);
+  border-radius:9px;padding:9px 12px;color:#fff;font-family:inherit;
+  font-size:14px;font-weight:600;outline:none;
+}
+.setup-member-inp::placeholder{color:rgba(255,255,255,.3);}
+.setup-member-inp:focus{border-color:rgba(255,255,255,.55);}
+.btn-rm-mem{background:rgba(255,80,80,.25);border:none;border-radius:8px;width:32px;height:32px;color:#ff9999;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mem-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.btn-add-mem{
+  width:100%;padding:9px;border-radius:9px;border:2px dashed rgba(255,255,255,.3);
+  background:transparent;color:rgba(255,255,255,.55);font-family:inherit;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:14px;
+}
+.btn-add-mem:hover{border-color:rgba(255,255,255,.55);color:rgba(255,255,255,.85);}
+.btn-add-mem:disabled{opacity:.3;cursor:not-allowed;}
+
+/* Who am I */
+.who-label{color:rgba(255,255,255,.6);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;}
+.member-btns{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.member-btn{
+  padding:9px 14px;border-radius:10px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.1);color:rgba(255,255,255,.65);
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .15s;
+}
+.member-btn.on{border-color:#fff;background:rgba(255,255,255,.25);color:#fff;}
+.btn-join{
+  width:100%;padding:13px;border:none;border-radius:11px;
+  background:#fff;color:var(--blue);font-family:inherit;
+  font-weight:800;font-size:15px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);transition:all .2s;
+}
+.btn-join:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,0,0,.25);}
+.btn-join:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.setup-hint{color:rgba(255,255,255,.35);font-size:11px;text-align:center;margin-top:10px;line-height:1.6;}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(145deg,#0d1b4b 0%,#1e3a8a 55%,#3b5bdb 100%);position:sticky;top:0;z-index:300;box-shadow:0 6px 28px rgba(13,27,75,.35);position:relative;}
+.hdr::after{content:'';position:absolute;inset:0;z-index:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+.hdr>*{position:relative;z-index:1;}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 10px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-ico{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.brand-name{color:#fff;font-size:15px;font-weight:800;}
+.brand-sub{color:rgba(255,255,255,.5);font-size:10px;}
+.hdr-right{display:flex;gap:6px;align-items:center;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#69db7c;box-shadow:0 0 6px #69db7c;animation:pulse 2s infinite;}
+.sync-dot.syncing{background:#ffd43b;box-shadow:0 0 6px #ffd43b;animation:spin-dot 1s linear infinite;}
+.sync-dot.error{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b;animation:none;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin-dot{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-hdr{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:9px;padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;}
+.btn-save-hdr{background:rgba(12,166,120,.3);border:1px solid rgba(12,166,120,.5);color:#69ffd3;border-radius:9px;padding:5px 10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-save-hdr:active{background:rgba(12,166,120,.5);}
+.user-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 9px;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.user-dot{width:8px;height:8px;border-radius:50%;}
+
+.mbar{padding:0 16px 10px;display:flex;gap:8px;}
+.msel,.ysel{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:9px;padding:7px 10px;font-family:inherit;font-size:13px;font-weight:600;outline:none;cursor:pointer;}
+.msel{flex:1;}.ysel{width:86px;}
+.msel option,.ysel option{color:#0f1740;background:#fff;}
+.last-sync{padding:0 16px 9px;font-size:10px;color:rgba(255,255,255,.4);text-align:right;}
+
+/* ── SAVE STATUS BANNER ── */
+.save-banner{
+  background:rgba(12,166,120,.12);border:1.5px solid rgba(12,166,120,.3);
+  border-radius:10px;padding:9px 14px;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:12px;color:var(--green);font-weight:600;
+}
+.save-banner.hidden{display:none;}
+.save-banner.unsaved{background:rgba(255,193,7,.1);border-color:rgba(255,193,7,.35);color:#b7791f;}
+.btn-save-now{background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-save-now.unsaved-btn{background:#e67700;}
+
+/* ── MAIN ── */
+.wrap{max-width:580px;margin:0 auto;padding:14px 13px 100px;position:relative;z-index:1;}
+
+/* HERO */
+.hero{background:linear-gradient(145deg,#0d1b4b,#1e3a8a);border-radius:var(--r);padding:17px;margin-bottom:12px;box-shadow:0 8px 30px rgba(59,91,219,.35);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='40' cy='40' r='2'/%3E%3Ccircle cx='0' cy='0' r='2'/%3E%3Ccircle cx='80' cy='0' r='2'/%3E%3Ccircle cx='0' cy='80' r='2'/%3E%3Ccircle cx='80' cy='80' r='2'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+.hero-glow{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;position:relative;}
+.hero-lbl{color:rgba(255,255,255,.5);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.hero-val{color:#fff;font-size:26px;font-weight:800;letter-spacing:-1px;}
+.hero-badge{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;}
+.hero-stats{display:flex;gap:8px;overflow-x:auto;position:relative;}
+.hero-stats::-webkit-scrollbar{display:none;}
+.hs{background:rgba(255,255,255,.09);border-radius:9px;padding:9px 10px;text-align:center;border:1px solid rgba(255,255,255,.07);flex:1;min-width:70px;}
+.hs-val{color:#fff;font-size:13px;font-weight:700;}
+.hs-lbl{color:rgba(255,255,255,.45);font-size:9px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* MEMBER CARDS */
+.mcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.mcard{background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--sh-lg);border-top:4px solid #ccc;position:relative;overflow:hidden;transition:all .2s;}
+.mcard-bg{position:absolute;right:-8px;bottom:-8px;width:65px;height:65px;border-radius:50%;opacity:.07;}
+.mcard-you{position:absolute;top:9px;right:9px;background:var(--blue);color:#fff;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:700;text-transform:uppercase;}
+.mcard-name{font-size:12px;font-weight:800;margin-bottom:2px;}
+.mcard-amt{font-size:20px;font-weight:800;margin:3px 0;}
+.mcard-cnt{font-size:10px;color:var(--muted);}
+.mbar-wrap{background:var(--border);border-radius:4px;height:4px;margin-top:9px;overflow:hidden;}
+.mbar-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+
+/* SETTLEMENT */
+.settle{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh-lg);margin-bottom:12px;position:relative;overflow:hidden;}
+.settle::before{content:'⚖️';position:absolute;right:14px;top:12px;font-size:38px;opacity:.05;}
+.settle-ttl{font-size:15px;font-weight:800;margin-bottom:4px;}
+.settle-sub{font-size:11px;color:var(--muted);margin-bottom:14px;}
+.sr{border-radius:13px;padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sr.pay{background:linear-gradient(135deg,#fff0f0,#ffe8e8);border:2px solid #ffc9c9;}
+.sr.even{background:linear-gradient(135deg,#edf2ff,#e8ecff);border:2px solid #bac8ff;}
+.sr-from{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.sr-names{font-size:15px;font-weight:800;}
+.sr-detail{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.7;}
+.sr-amt{font-size:24px;font-weight:800;color:var(--red);text-align:right;}
+.sr-lbl{font-size:10px;color:var(--muted);text-align:right;margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
+.settle-breakdown{background:#f8faff;border-radius:11px;padding:12px;}
+.sb-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);}
+.sb-row:last-child{border-bottom:none;}
+.sb-lbl{font-size:12px;font-weight:600;}
+.sb-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-val{font-size:13px;font-weight:800;}
+
+/* ADD FORM */
+.fp{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh-lg);margin-bottom:12px;border:2px solid var(--blue);}
+.fp-title{font-size:14px;font-weight:800;margin-bottom:12px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.flbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.finp{background:#f5f8ff;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none;transition:all .2s;width:100%;}
+.finp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,91,219,.1);background:#fff;}
+.finp.big{font-size:20px;font-weight:800;color:var(--blue);}
+.tgrid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px;}
+.tbtn{padding:8px 14px;border-radius:10px;border:2px solid var(--border);background:#f8faff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:inherit;}
+.tbtn.on{font-weight:700;}
+.arow{display:flex;gap:8px;}
+.bsub{flex:1;padding:12px;border:none;border-radius:10px;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#1e3a8a,var(--blue2));box-shadow:0 4px 14px rgba(59,91,219,.3);transition:all .2s;}
+.bsub:disabled{opacity:.5;cursor:not-allowed;}
+.bcan{padding:12px 14px;background:#f0f4ff;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;}
+
+/* ENTRIES */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.sec-ttl{font-size:14px;font-weight:700;}
+.bdl{background:linear-gradient(135deg,#054f35,var(--green));border:none;border-radius:9px;padding:7px 12px;color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:10px;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:#f5f8ff;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit;}
+.chip.on{color:#fff;}
+.dg{margin-bottom:13px;}
+.dg-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;padding:0 2px;}
+.dg-l{display:flex;align-items:center;gap:8px;}
+.dpill{background:var(--text);color:#fff;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;}
+.dpill.today{background:var(--blue);}
+.dday{font-size:11px;color:var(--muted);font-weight:500;}
+.dtot{font-size:13px;font-weight:700;color:var(--red);}
+.entry{background:var(--card);border-radius:12px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;box-shadow:var(--sh);border-left:4px solid var(--border);transition:all .18s;}
+.eico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:#fff4e6;}
+.einfo{flex:1;min-width:0;}
+.ename{font-size:12px;font-weight:700;}
+.emeta{font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.mtag{padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;}
+.eamt{font-size:14px;font-weight:800;color:#e8590c;flex-shrink:0;}
+.eacts{display:flex;gap:4px;flex-shrink:0;}
+.be,.bd{width:28px;height:28px;border-radius:7px;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.be{background:#fff8e1;color:#e67700;border:1px solid #ffe58f;}
+.bd{background:#fff0f0;color:#c92a2a;border:1px solid #ffc9c9;}
+.empty{text-align:center;padding:40px 20px;}
+.ei{font-size:44px;margin-bottom:10px;}
+.et{font-size:14px;font-weight:700;color:#aab;margin-bottom:5px;}
+.es{font-size:12px;color:#ccd;}
+
+/* FAB */
+.fab{position:fixed;bottom:22px;right:15px;z-index:400;display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+.fab-save-btn{
+  background:linear-gradient(135deg,#054f35,var(--green));
+  border:none;border-radius:28px;padding:10px 16px;
+  color:#fff;font-family:inherit;font-size:12px;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 16px rgba(12,166,120,.4);
+  transition:all .2s;display:flex;align-items:center;gap:6px;
+}
+.fab-save-btn.saved{background:linear-gradient(135deg,#1a4731,#237a52);}
+.fab-add-btn{
+  width:56px;height:56px;border-radius:50%;border:none;
+  font-size:26px;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,#1e3a8a,var(--blue2));
+  box-shadow:0 6px 22px rgba(59,91,219,.45);
+  transition:all .25s;display:flex;align-items:center;justify-content:center;
+}
+.fab-add-btn.open{background:linear-gradient(135deg,#c92a2a,#e03131);transform:rotate(45deg);}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f1740;color:#fff;border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;display:none;z-index:500;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:popIn .3s ease;}
+.toast.green-t{background:#0ca678;}
+.toast.red-t{background:#e03131;}
+@keyframes popIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* PRINT SHEET */
+#ps{position:fixed;top:-9999px;left:-9999px;width:500px;background:#fff;padding:26px;font-family:'Plus Jakarta Sans',sans-serif;color:#0f1740;}
+.ps-h{background:linear-gradient(135deg,#0d1b4b,#1e3a8a);color:#fff;padding:18px;border-radius:12px;margin-bottom:16px;}
+.ps-h h1{font-size:18px;font-weight:800;}
+.ps-h p{font-size:11px;opacity:.55;margin-top:2px;}
+.ps-meta{display:flex;gap:8px;margin-top:9px;}
+.ps-meta span{font-size:10px;opacity:.75;background:rgba(255,255,255,.13);padding:3px 8px;border-radius:5px;}
+.ps-settle{border-radius:11px;padding:14px;margin-bottom:14px;text-align:center;}
+.ps-settle .ps-slbl{font-size:11px;color:#999;margin-bottom:5px;}
+.ps-settle .ps-sval{font-size:24px;font-weight:800;}
+.ps-settle .ps-sdet{font-size:12px;color:#666;margin-top:5px;}
+.ps-mcards{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
+.ps-mc{border-radius:9px;padding:13px;border-left:4px solid #ccc;}
+.ps-mc .pn{font-size:11px;font-weight:700;color:#888;margin-bottom:3px;}
+.ps-mc .pa{font-size:18px;font-weight:800;}
+.ps-mc .pc{font-size:10px;color:#aaa;margin-top:2px;}
+.ps-info{background:#eef2ff;border-radius:9px;padding:11px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.pstbl{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.pstbl th{background:#eef2ff;padding:8px 10px;text-align:left;font-size:9px;color:#7a85a3;text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+.pstbl td{padding:8px 10px;border-bottom:1px solid #dde3f4;font-size:11px;}
+.pstbl .ar{text-align:right;font-weight:700;}
+.ps-foot{background:#eef2ff;border-radius:9px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;}
+</style>
+</head>
+<body>
+
+<div class="bg-svg">
+<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b5bdb;stop-opacity:0.06"/><stop offset="100%" style="stop-color:#7048e8;stop-opacity:0.02"/></linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0ca678;stop-opacity:0.05"/><stop offset="100%" style="stop-color:#3b5bdb;stop-opacity:0.02"/></linearGradient>
+  </defs>
+  <circle cx="350" cy="150" r="180" fill="url(#g1)"/><circle cx="50" cy="500" r="140" fill="url(#g2)"/><circle cx="380" cy="650" r="100" fill="url(#g1)"/>
+  <line x1="0" y1="200" x2="400" y2="350" stroke="#3b5bdb" stroke-width="0.5" stroke-opacity="0.08"/>
+  <circle cx="60" cy="100" r="3" fill="#3b5bdb" fill-opacity="0.12"/><circle cx="340" cy="300" r="3" fill="#7048e8" fill-opacity="0.1"/>
+</svg>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════════════ -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-logo">🍽️</div>
+  <div class="setup-title">Mess Manager</div>
+  <div class="setup-sub">Room banao · Members add karo · Hisaab rakho</div>
+  <div class="setup-card">
+
+    <div class="setup-label">Room Code</div>
+    <input type="text" class="setup-inp" id="roomInp" placeholder="e.g. itxabdx" autocomplete="off" autocorrect="off" autocapitalize="off">
+
+    <div class="setup-label">Members (2 se 5 tak)</div>
+    <div class="setup-members-box" id="membersList"></div>
+    <button class="btn-add-mem" id="addMemBtn" onclick="addMemberField()">+ Member Add Karo</button>
+
+    <div class="who-label" id="whoLabel" style="display:none">Aap Kaun Hain?</div>
+    <div class="member-btns" id="memberBtns"></div>
+
+    <button class="btn-join" id="joinBtn" onclick="joinRoom()" disabled>🚀 Room Join Karo</button>
+    <div class="setup-hint">Same room code likhne se dono phones sync honge<br>Data save rahega — kabhi delete nahi hoga</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div id="mainApp" style="display:none">
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="brand">
+      <div class="brand-ico">🍽️</div>
+      <div><div class="brand-name">Mess Manager</div><div class="brand-sub" id="roomLabel">Loading...</div></div>
+    </div>
+    <div class="hdr-right">
+      <div class="sync-dot" id="syncDot"></div>
+      <button class="btn-save-hdr" onclick="manualSave()">💾 Save</button>
+      <div class="user-badge" id="userBadge"><div class="user-dot" id="userDot"></div><span id="userName"></span></div>
+      <button class="btn-hdr" onclick="confirmLeave()">Exit</button>
+    </div>
+  </div>
+  <div class="mbar">
+    <select class="msel" id="mSel" onchange="onMC()"></select>
+    <select class="ysel" id="ySel" onchange="onMC()"></select>
+  </div>
+  <div class="last-sync" id="lastSync">Connecting...</div>
+</div>
+
+<div class="wrap">
+
+  <!-- SAVE STATUS -->
+  <div class="save-banner hidden" id="saveBanner">
+    <span id="saveBannerTxt">✅ Data save ho gaya</span>
+    <button class="btn-save-now" id="saveBannerBtn" onclick="manualSave()">Save Now</button>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-row">
+      <div><div class="hero-lbl">Total Mess Kharcha</div><div class="hero-val" id="hTotal">AED 0.00</div><div style="color:rgba(255,255,255,.4);font-size:10px;margin-top:2px" id="hMonth"></div></div>
+      <div class="hero-badge" id="hBadge">0 entries</div>
+    </div>
+    <div class="hero-stats" id="heroStats"></div>
+  </div>
+
+  <!-- MEMBER CARDS -->
+  <div class="mcards" id="mCards"></div>
+
+  <!-- SETTLEMENT -->
+  <div class="settle">
+    <div class="settle-ttl">⚖️ Settlement</div>
+    <div class="settle-sub" id="settleSub">Is mahine ka hisaab</div>
+    <div id="settleBody"></div>
+  </div>
+
+  <!-- ADD FORM -->
+  <div class="fp" id="addForm" style="display:none">
+    <div class="fp-title">🍽️ Mess Kharcha Add Karo</div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">📅 Date</label><input type="date" id="eDate" class="finp"></div>
+      <div class="fg"><label class="flbl">💰 Amount (AED)</label><input type="number" id="eAmt" class="finp big" placeholder="0.00"></div>
+    </div>
+    <div class="fg" style="margin-bottom:11px">
+      <label class="flbl">👤 Kiska Kharcha</label>
+      <div class="tgrid" id="memTgl"></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label class="flbl">📝 Note</label><input type="text" id="eNote" class="finp" placeholder="Kya khareeda... (optional)"></div>
+    <div class="arow">
+      <button class="bsub" id="addBtn" onclick="submitEntry()">✅ Add Karo</button>
+      <button class="bcan" onclick="closeForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ENTRIES -->
+  <div class="sec-hdr">
+    <div class="sec-ttl">📋 Entries</div>
+    <button class="bdl" onclick="dlMess()">📥 Download</button>
+  </div>
+  <div class="chips" id="filterChips"></div>
+  <div id="entriesList"></div>
+  <div class="empty" id="emptyState" style="display:none"><div class="ei">🍽️</div><div class="et">Koi entry nahi</div><div class="es">+ button se add karo</div></div>
+
+</div>
+</div><!-- end mainApp -->
+
+<!-- FAB -->
+<div class="fab" id="fabArea" style="display:none">
+  <button class="fab-save-btn" id="fabSaveBtn" onclick="manualSave()">💾 Save</button>
+  <button class="fab-add-btn" id="fabBtn" onclick="toggleForm()">+</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="ps"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const COLORS=["#3b5bdb","#e8590c","#0ca678","#ae3ec9","#e67700","#2b8a3e","#c92a2a","#1971c2"];
+const MAX_MEMBERS=5;
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let roomCode="", myId="", members=[], entries=[];
+let sY=new Date().getFullYear(), sM=new Date().getMonth();
+let selMem="", editId=null, filterMem="all";
+let lastSyncTime=0, isSyncing=false, syncInterval=null;
+let hasUnsavedChanges=false;
+
+// ════════════════════════════════════════════
+// SETUP — member fields
+// ════════════════════════════════════════════
+let setupMembers=[{name:"",id:"m0"},{name:"",id:"m1"}];
+
+function renderSetupMembers(){
+  const box=document.getElementById("membersList");
+  box.innerHTML=setupMembers.map((m,i)=>`
+    <div class="setup-member-row">
+      <div class="mem-color-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+      <input class="setup-member-inp" placeholder="Member ka naam" value="${m.name}"
+        oninput="setupMembers[${i}].name=this.value.trim();rebuildWhoButtons();checkJoinReady()"
+        autocorrect="off" autocapitalize="words">
+      ${setupMembers.length>2?`<button class="btn-rm-mem" onclick="removeMemberField(${i})">✕</button>`:"<div style='width:32px'></div>"}
+    </div>`).join("");
+  document.getElementById("addMemBtn").disabled=setupMembers.length>=MAX_MEMBERS;
+  rebuildWhoButtons();
+}
+
+function addMemberField(){
+  if(setupMembers.length>=MAX_MEMBERS)return;
+  setupMembers.push({name:"",id:"m"+Date.now()});
+  renderSetupMembers();
+}
+function removeMemberField(i){
+  if(setupMembers.length<=2)return;
+  setupMembers.splice(i,1);
+  renderSetupMembers();
+  checkJoinReady();
+}
+
+let setupSelMember="";
+function rebuildWhoButtons(){
+  const valid=setupMembers.filter(m=>m.name.length>0);
+  const whoLabel=document.getElementById("whoLabel");
+  const mb=document.getElementById("memberBtns");
+  if(valid.length<2){whoLabel.style.display="none";mb.innerHTML="";setupSelMember="";return;}
+  whoLabel.style.display="block";
+  mb.innerHTML=valid.map((m,i)=>`
+    <button class="member-btn ${setupSelMember===m.id?"on":""}"
+      onclick="selSetupMember('${m.id}')"
+      style="${setupSelMember===m.id?`border-color:${COLORS[i%COLORS.length]};background:${COLORS[i%COLORS.length]}30;color:${COLORS[i%COLORS.length]};`:""}"
+    >${m.name}</button>`).join("");
+  checkJoinReady();
+}
+function selSetupMember(id){
+  setupSelMember=id;
+  rebuildWhoButtons();
+  checkJoinReady();
+}
+
+document.getElementById("roomInp").addEventListener("input",checkJoinReady);
+function checkJoinReady(){
+  const code=document.getElementById("roomInp").value.trim();
+  const validNames=setupMembers.filter(m=>m.name.length>0);
+  document.getElementById("joinBtn").disabled=!(code.length>=2 && validNames.length>=2 && setupSelMember && validNames.find(m=>m.id===setupSelMember));
+}
+
+function joinRoom(){
+  const code=document.getElementById("roomInp").value.trim().toLowerCase().replace(/\s+/g,"-");
+  if(!code||!setupSelMember)return;
+  const validMems=setupMembers.filter(m=>m.name.length>0);
+  if(validMems.length<2)return;
+  roomCode=code;
+  myId=setupSelMember;
+  members=validMems.map((m,i)=>({id:m.id,name:m.name,color:COLORS[i%COLORS.length]}));
+  // Save session
+  localStorage.setItem("mess_session_v2",JSON.stringify({roomCode,myId,members}));
+  startApp();
+}
+
+// ════════════════════════════════════════════
+// RESTORE SESSION
+// ════════════════════════════════════════════
+function initSetup(){
+  renderSetupMembers();
+  const saved=localStorage.getItem("mess_session_v2");
+  if(saved){
+    try{
+      const s=JSON.parse(saved);
+      roomCode=s.roomCode; myId=s.myId; members=s.members||[];
+      startApp();
+      return;
+    }catch{}
+  }
+}
+
+// ════════════════════════════════════════════
+// START APP
+// ════════════════════════════════════════════
+function startApp(){
+  document.getElementById("setupScreen").classList.add("hidden");
+  document.getElementById("mainApp").style.display="block";
+  document.getElementById("fabArea").style.display="flex";
+  initApp();
+}
+
+function initApp(){
+  const now=new Date();
+  sM=now.getMonth(); sY=now.getFullYear();
+  const ms=document.getElementById("mSel"),ys=document.getElementById("ySel");
+  ms.innerHTML=""; ys.innerHTML="";
+  MONTHS.forEach((m,i)=>{const o=document.createElement("option");o.value=i;o.textContent=m;ms.appendChild(o);});
+  [now.getFullYear()-1,now.getFullYear(),now.getFullYear()+1].forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;ys.appendChild(o);});
+  ms.value=sM; ys.value=sY;
+
+  const me=members.find(m=>m.id===myId);
+  document.getElementById("userBadge").innerHTML=`<div class="user-dot" style="background:${me?.color||'#fff'}"></div><span>${me?.name||"Me"}</span>`;
+  document.getElementById("roomLabel").textContent=`Room: ${roomCode}`;
+  document.getElementById("userName").textContent=me?.name||"Me";
+  document.getElementById("eDate").value=td();
+  selMem=myId;
+
+  renderMemTgl();
+  renderFilterChips();
+  // Load local data first (instant), then sync from cloud
+  loadLocalData();
+  startSync();
+}
+
+// ════════════════════════════════════════════
+// LOCAL STORAGE — instant save/load
+// ════════════════════════════════════════════
+function localKey(){ return`mess_data_${roomCode}`; }
+
+function saveLocal(){
+  try{
+    localStorage.setItem(localKey(),JSON.stringify({entries,members,savedAt:Date.now()}));
+  }catch(e){console.error("Local save fail:",e);}
+}
+
+function loadLocalData(){
+  try{
+    const raw=localStorage.getItem(localKey());
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d.entries) entries=d.entries;
+      if(d.members&&d.members.length) members=d.members;
+      render();
+    }
+  }catch(e){console.error("Local load fail:",e);}
+}
+
+// ════════════════════════════════════════════
+// CLOUD SYNC
+// ════════════════════════════════════════════
+const cloudKey=()=>`mess_room_${roomCode}`;
+
+async function syncFromCloud(){
+  if(isSyncing)return;
+  isSyncing=true; setSyncStatus("syncing");
+  try{
+    const result=await window.storage.get(cloudKey(),true);
+    if(result&&result.value){
+      const cloud=JSON.parse(result.value);
+      // Merge: take whichever has more recent data
+      if(cloud.entries) entries=cloud.entries;
+      if(cloud.members&&cloud.members.length) members=cloud.members;
+      saveLocal(); // keep local in sync with cloud
+    }
+    lastSyncTime=Date.now();
+    setSyncStatus("ok");
+    render();
+    updateLastSyncLabel();
+    setUnsaved(false);
+  }catch(e){
+    setSyncStatus("error");
+    console.error("Sync error:",e);
+  }finally{isSyncing=false;}
+}
+
+async function pushToCloud(){
+  isSyncing=true; setSyncStatus("syncing");
+  try{
+    const data=JSON.stringify({entries,members,updatedAt:Date.now()});
+    await window.storage.set(cloudKey(),data,true);
+    saveLocal(); // also save locally
+    lastSyncTime=Date.now();
+    setSyncStatus("ok");
+    updateLastSyncLabel();
+    setUnsaved(false);
+    showToast("✅ Data save ho gaya!","green-t");
+  }catch(e){
+    setSyncStatus("error");
+    console.error("Push error:",e);
+    // Still save locally even if cloud fails
+    saveLocal();
+    showToast("⚠️ Cloud sync fail — local save ho gaya","");
+  }finally{isSyncing=false;}
+}
+
+async function manualSave(){
+  await pushToCloud();
+  // Update fab button
+  const btn=document.getElementById("fabSaveBtn");
+  btn.textContent="✅ Saved!";
+  btn.classList.add("saved");
+  setTimeout(()=>{btn.textContent="💾 Save";btn.classList.remove("saved");},2000);
+}
+
+function setUnsaved(flag){
+  hasUnsavedChanges=flag;
+  const banner=document.getElementById("saveBanner");
+  if(flag){
+    banner.classList.remove("hidden");
+    banner.classList.add("unsaved");
+    document.getElementById("saveBannerTxt").textContent="⚠️ Unsaved changes hain — Save karo";
+    document.getElementById("saveBannerBtn").classList.add("unsaved-btn");
+    document.getElementById("saveBannerBtn").textContent="Save Now";
+  }else{
+    banner.classList.remove("hidden","unsaved");
+    document.getElementById("saveBannerTxt").textContent="✅ Data save ho gaya";
+    document.getElementById("saveBannerBtn").classList.remove("unsaved-btn");
+    document.getElementById("saveBannerBtn").textContent="Sync";
+    setTimeout(()=>banner.classList.add("hidden"),3000);
+  }
+}
+
+function setSyncStatus(s){
+  const dot=document.getElementById("syncDot");
+  dot.className="sync-dot"+(s==="syncing"?" syncing":s==="error"?" error":"");
+}
+function updateLastSyncLabel(){
+  const s=document.getElementById("lastSync");
+  if(!lastSyncTime){s.textContent="Sync pending...";return;}
+  const ago=Math.floor((Date.now()-lastSyncTime)/1000);
+  s.textContent=ago<5?"✓ Just synced":ago<60?`Synced ${ago}s ago`:`Synced ${Math.floor(ago/60)}m ago`;
+}
+function startSync(){
+  syncFromCloud();
+  syncInterval=setInterval(()=>{syncFromCloud();updateLastSyncLabel();},8000);
+  setInterval(updateLastSyncLabel,15000);
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function onMC(){sM=parseInt(document.getElementById("mSel").value);sY=parseInt(document.getElementById("ySel").value);filterMem="all";renderFilterChips();render();}
+function td(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function fmt(n){return"AED "+(n||0).toFixed(2);}
+function getMonthEntries(){return entries.filter(e=>e.year===sY&&e.month===sM);}
+
+// ════════════════════════════════════════════
+// ENTRIES CRUD
+// ════════════════════════════════════════════
+function submitEntry(){
+  const date=document.getElementById("eDate").value;
+  const amount=parseFloat(document.getElementById("eAmt").value);
+  const note=document.getElementById("eNote").value.trim();
+  if(!date||!amount||amount<=0){showToast("Amount daalo!","red-t");return;}
+  const entry={id:Date.now(),date,amount,memberId:selMem,note,year:sY,month:sM,by:myId};
+  if(editId!==null){
+    entries=entries.map(e=>e.id===editId?{...entry,id:editId}:e);
+    editId=null;
+  }else{
+    entries.push(entry);
+  }
+  // Auto-save locally + push to cloud
+  saveLocal();
+  pushToCloud();
+  closeForm();
+  render();
+  showToast("✅ Entry add ho gayi!","green-t");
+}
+
+function delEntry(id){
+  if(!confirm("Delete karo?"))return;
+  entries=entries.filter(e=>e.id!==id);
+  saveLocal();
+  pushToCloud();
+  render();
+}
+
+function startEdit(id){
+  const e=entries.find(x=>x.id===id);if(!e)return;
+  editId=id;selMem=e.memberId;
+  document.getElementById("eDate").value=e.date;
+  document.getElementById("eAmt").value=e.amount;
+  document.getElementById("eNote").value=e.note||"";
+  document.getElementById("addForm").style.display="block";
+  renderMemTgl();
+  document.getElementById("addForm").scrollIntoView({behavior:"smooth"});
+}
+
+// ════════════════════════════════════════════
+// FORM
+// ════════════════════════════════════════════
+function toggleForm(){
+  const f=document.getElementById("addForm");
+  const isOpen=f.style.display!=="none";
+  if(isOpen){closeForm();}
+  else{
+    f.style.display="block";
+    document.getElementById("fabBtn").classList.add("open");
+    document.getElementById("eDate").value=td();
+    editId=null;selMem=myId;
+    renderMemTgl();
+    f.scrollIntoView({behavior:"smooth"});
+  }
+}
+function closeForm(){
+  document.getElementById("addForm").style.display="none";
+  document.getElementById("fabBtn").classList.remove("open");
+  document.getElementById("eAmt").value="";
+  document.getElementById("eNote").value="";
+  editId=null;
+}
+function renderMemTgl(){
+  document.getElementById("memTgl").innerHTML=members.map(m=>`
+    <button class="tbtn ${selMem===m.id?"on":""}" onclick="selMem='${m.id}';renderMemTgl()"
+      style="${selMem===m.id?`border-color:${m.color};background:${m.color}18;color:${m.color};`:""}">
+      ${m.name}${m.id===myId?' ✓':''}
+    </button>`).join("");
+}
+function renderFilterChips(){
+  const chips=[{id:"all",name:"👥 Sab",color:"#3b5bdb"},...members];
+  document.getElementById("filterChips").innerHTML=chips.map(c=>`
+    <div class="chip ${filterMem===c.id?"on":""}" onclick="filterMem='${c.id}';renderFilterChips();render()"
+      style="${filterMem===c.id?`background:${c.color};border-color:${c.color};`:""}">${c.name||c.id}</div>`).join("");
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function render(){
+  const me=getMonthEntries();
+  const tMess=me.reduce((s,e)=>s+e.amount,0);
+  const share=members.length?tMess/members.length:0;
+
+  // Hero
+  document.getElementById("hTotal").textContent=fmt(tMess);
+  document.getElementById("hMonth").textContent=`${MONTHS[sM]} ${sY}`;
+  document.getElementById("hBadge").textContent=`${me.length} entries`;
+
+  // Hero stats — dynamic per member + share
+  document.getElementById("heroStats").innerHTML=[
+    ...members.map(m=>{
+      const mt=me.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0);
+      return`<div class="hs"><div class="hs-val">AED ${mt.toFixed(0)}</div><div class="hs-lbl" title="${m.name}">${m.name}</div></div>`;
+    }),
+    `<div class="hs"><div class="hs-val">AED ${share.toFixed(0)}</div><div class="hs-lbl">Hissa Each</div></div>`
+  ].join("");
+
+  // Member cards
+  const maxA=Math.max(...members.map(m=>me.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0)),1);
+  document.getElementById("mCards").innerHTML=members.map(m=>{
+    const mt=me.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0);
+    const mc=me.filter(e=>e.memberId===m.id).length;
+    const pct=tMess>0?(mt/tMess*100):0;
+    const isMe=m.id===myId;
+    return`<div class="mcard" style="border-top-color:${m.color}">
+      ${isMe?`<div class="mcard-you">Aap</div>`:""}
+      <div class="mcard-bg" style="background:${m.color}"></div>
+      <div class="mcard-name">${m.name}</div>
+      <div class="mcard-amt" style="color:${m.color}">${fmt(mt)}</div>
+      <div class="mcard-cnt">${mc} entries · ${pct.toFixed(0)}%</div>
+      <div class="mbar-wrap"><div class="mbar-fill" style="width:${(mt/maxA*100)}%;background:${m.color}"></div></div>
+    </div>`;
+  }).join("");
+
+  // Settlement
+  document.getElementById("settleSub").textContent=`${MONTHS[sM]} ${sY} · Total: AED ${tMess.toFixed(2)}`;
+  renderSettlement(me,tMess,share);
+
+  // Entries list
+  const filtered=filterMem==="all"?me:me.filter(e=>e.memberId===filterMem);
+  const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
+  const g={};sorted.forEach(e=>{if(!g[e.date])g[e.date]=[];g[e.date].push(e);});
+
+  if(!sorted.length){
+    document.getElementById("entriesList").innerHTML="";
+    document.getElementById("emptyState").style.display="block";
+    return;
+  }
+  document.getElementById("emptyState").style.display="none";
+
+  document.getElementById("entriesList").innerHTML=Object.entries(g).map(([date,its])=>{
+    const[y,m,d]=date.split("-");
+    const dn=new Date(parseInt(y),parseInt(m)-1,parseInt(d)).toLocaleDateString("en-US",{weekday:"long"});
+    const isT=date===td();
+    const dt=its.reduce((s,e)=>s+e.amount,0);
+    const rows=its.map(item=>{
+      const mem=members.find(x=>x.id===item.memberId);
+      const isMyEntry=item.by===myId||item.memberId===myId;
+      return`<div class="entry" style="border-left-color:${mem?.color||'#ccc'}">
+        <div class="eico" style="background:${mem?.color||'#ccc'}18">🍽️</div>
+        <div class="einfo">
+          <div class="ename">Mess Kharcha</div>
+          <div class="emeta">
+            <span class="mtag" style="background:${mem?.color||'#ccc'}22;color:${mem?.color||'#333'}">${mem?.name||"?"}</span>
+            ${item.note?`<span>${item.note}</span>`:""}
+          </div>
+        </div>
+        <div class="eamt" style="color:${mem?.color||'#e8590c'}">${fmt(item.amount)}</div>
+        <div class="eacts">
+          ${isMyEntry?`<button class="be" onclick="startEdit(${item.id})">✏️</button>`:""}
+          ${isMyEntry?`<button class="bd" onclick="delEntry(${item.id})">🗑️</button>`:""}
+        </div>
+      </div>`;
+    }).join("");
+    return`<div class="dg">
+      <div class="dg-hdr">
+        <div class="dg-l"><div class="dpill ${isT?"today":""}">${d} ${MONTHS[parseInt(m)-1].slice(0,3)}</div><div class="dday">${dn}${isT?" · Today":""}</div></div>
+        <div class="dtot">−${fmt(dt)}</div>
+      </div>
+      ${rows}</div>`;
+  }).join("");
+}
+
+function renderSettlement(me,tMess,share){
+  if(members.length<2||tMess===0){
+    document.getElementById("settleBody").innerHTML=`<div style="color:var(--muted);font-size:13px">${tMess===0?"Koi kharcha nahi abhi.":"2+ members chahiye."}</div>`;
+    return;
+  }
+  const paid=members.map(m=>({...m,paid:parseFloat(me.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0).toFixed(2))}));
+  const bals=paid.map(m=>({...m,bal:parseFloat((m.paid-share).toFixed(2))}));
+
+  let html=`<div class="settle-breakdown">
+    <div class="sb-row"><div><div class="sb-lbl">💰 Total Mess Kharcha</div></div><div class="sb-val">${fmt(tMess)}</div></div>
+    <div class="sb-row"><div><div class="sb-lbl">➗ Hissa (${members.length} log)</div></div><div class="sb-val" style="color:var(--blue)">${fmt(share)}</div></div>
+    ${paid.map(m=>`<div class="sb-row">
+      <div><div class="sb-lbl" style="color:${m.color}">${m.name} ne lagaye</div><div class="sb-sub">${me.filter(e=>e.memberId===m.id).length} entries</div></div>
+      <div class="sb-val" style="color:${m.color}">${fmt(m.paid)}</div>
+    </div>`).join("")}
+  </div><div style="height:11px"></div>`;
+
+  const debtors=bals.filter(b=>b.bal<0).map(x=>({...x})).sort((a,b)=>a.bal-b.bal);
+  const creds=bals.filter(b=>b.bal>0).map(x=>({...x})).sort((a,b)=>b.bal-a.bal);
+  if(!debtors.length){
+    html+=`<div class="sr even"><div class="sr-names" style="color:var(--blue)">✅ Sab Barabar!</div></div>`;
+  }else{
+    let d=[...debtors],c=[...creds],i=0,j=0;
+    while(i<d.length&&j<c.length){
+      const amt=Math.min(-d[i].bal,c[j].bal);
+      if(amt>0.005){
+        const fromMe=d[i].id===myId,toMe=c[j].id===myId;
+        html+=`<div class="sr pay">
+          <div>
+            <div class="sr-from">💸 Dena hai</div>
+            <div class="sr-names"><span style="color:${d[i].color}">${d[i].name}</span> → <span style="color:${c[j].color}">${c[j].name}</span></div>
+            <div class="sr-detail">
+              ${d[i].name}: AED ${paid.find(p=>p.id===d[i].id)?.paid.toFixed(2)}<br>
+              ${c[j].name}: AED ${paid.find(p=>p.id===c[j].id)?.paid.toFixed(2)}<br>
+              Hissa: AED ${share.toFixed(2)} each
+              ${fromMe?"<br><strong>📌 Aapko dena hai</strong>":""}
+              ${toMe?"<br><strong>📌 Aapko milega</strong>":""}
+            </div>
+          </div>
+          <div><div class="sr-amt">AED ${amt.toFixed(2)}</div><div class="sr-lbl">${d[i].name} dega</div></div>
+        </div>`;
+      }
+      d[i].bal+=amt;c[j].bal-=amt;
+      if(Math.abs(d[i].bal)<0.01)i++;
+      if(Math.abs(c[j].bal)<0.01)j++;
+    }
+  }
+  document.getElementById("settleBody").innerHTML=html;
+}
+
+// ════════════════════════════════════════════
+// DOWNLOAD
+// ════════════════════════════════════════════
+function dlMess(){
+  const me=getMonthEntries();
+  const showMe=filterMem==="all"?me:me.filter(e=>e.memberId===filterMem);
+  const tMess=me.reduce((s,e)=>s+e.amount,0);
+  const share=members.length?tMess/members.length:0;
+  const paid=members.map(m=>({...m,paid:me.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0)}));
+  const bals=paid.map(m=>({...m,bal:parseFloat((m.paid-share).toFixed(2))}));
+  const debtors=bals.filter(b=>b.bal<0).map(x=>({...x})).sort((a,b)=>a.bal-b.bal);
+  const creds=bals.filter(b=>b.bal>0).map(x=>({...x})).sort((a,b)=>b.bal-a.bal);
+
+  let settleHTML="";
+  if(!debtors.length||tMess===0){
+    settleHTML=`<div class="ps-settle" style="background:#edf2ff;border:2px solid #bac8ff"><div class="ps-slbl">Settlement</div><div class="ps-sval" style="color:#3b5bdb">Barabar! ✅</div></div>`;
+  }else{
+    let d=[...debtors],c=[...creds],i=0,j=0;
+    while(i<d.length&&j<c.length){
+      const amt=Math.min(-d[i].bal,c[j].bal);
+      if(amt>0.005){
+        settleHTML+=`<div class="ps-settle" style="background:#fff0f0;border:2px solid #ffc9c9">
+          <div class="ps-slbl">${d[i].name} → ${c[j].name}</div>
+          <div class="ps-sval" style="color:#e03131">AED ${amt.toFixed(2)}</div>
+          <div class="ps-sdet">${d[i].name} ko ${c[j].name} ko dene hain</div>
+        </div>`;
+      }
+      d[i].bal+=amt;c[j].bal-=amt;
+      if(Math.abs(d[i].bal)<0.01)i++;
+      if(Math.abs(c[j].bal)<0.01)j++;
+    }
+  }
+
+  const sorted=[...showMe].sort((a,b)=>a.date.localeCompare(b.date));
+  const grp={};sorted.forEach(e=>{if(!grp[e.date])grp[e.date]=[];grp[e.date].push(e);});
+  let rows="";
+  Object.entries(grp).forEach(([date,its])=>{
+    const[y,m,d]=date.split("-");
+    const dn=new Date(parseInt(y),parseInt(m)-1,parseInt(d)).toLocaleDateString("en-US",{weekday:"short"});
+    const dt=its.reduce((s,e)=>s+e.amount,0);
+    rows+=`<tr style="background:#eef2ff"><td colspan="3" style="padding:7px 10px;font-weight:700;font-size:11px;color:#7a85a3">${d} ${MONTHS[parseInt(m)-1]} ${y} · ${dn}</td><td style="padding:7px 10px;font-weight:700;text-align:right;color:#e03131">AED ${dt.toFixed(2)}</td></tr>`;
+    its.forEach(e=>{
+      const mem=members.find(x=>x.id===e.memberId);
+      rows+=`<tr><td style="padding:7px 10px;font-size:12px">🍽️</td><td style="padding:7px 10px;font-size:12px;font-weight:600;color:${mem?.color||'#333'}">${mem?.name||"?"}</td><td style="padding:7px 10px;font-size:11px;color:#888">${e.note||"—"}</td><td style="padding:7px 10px;font-size:12px;font-weight:700;text-align:right">AED ${e.amount.toFixed(2)}</td></tr>`;
+    });
+  });
+
+  const filterMember=filterMem!=="all"?members.find(m=>m.id===filterMem):null;
+  document.getElementById("ps").innerHTML=`
+    <div class="ps-h"><h1>🍽️ Mess Manager</h1><p>Room: ${roomCode} · ${MONTHS[sM]} ${sY}${filterMember?" · "+filterMember.name:""}</p>
+    <div class="ps-meta"><span>📅 ${new Date().toLocaleDateString("en-AE")}</span><span>📊 ${showMe.length} entries</span></div></div>
+    <div class="ps-mcards">${paid.map(m=>`
+      <div class="ps-mc" style="background:${m.color}10;border-left-color:${m.color}">
+        <div class="pn">${m.name} ne lagaye</div>
+        <div class="pa" style="color:${m.color}">AED ${m.paid.toFixed(2)}</div>
+        <div class="pc">${me.filter(e=>e.memberId===m.id).length} entries</div>
+      </div>`).join("")}</div>
+    <div class="ps-info">
+      <div style="font-size:11px;font-weight:700;color:#7a85a3">Total · Hissa Each</div>
+      <div><strong>AED ${tMess.toFixed(2)}</strong> · <strong style="color:#3b5bdb">AED ${share.toFixed(2)}</strong></div>
+    </div>
+    ${settleHTML}
+    <table class="pstbl"><thead><tr><th></th><th>Member</th><th>Note</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="ps-foot"><div style="font-size:12px;font-weight:600;color:#7a85a3">TOTAL MESS ${filterMember?filterMember.name.toUpperCase():"SAB"}</div><div style="font-size:19px;font-weight:800">AED ${showMe.reduce((s,e)=>s+e.amount,0).toFixed(2)}</div></div>`;
+
+  const ps=document.getElementById("ps");
+  ps.style.cssText="position:fixed;top:0;left:0;z-index:9999;background:#fff;width:500px;padding:26px;";
+  html2canvas(ps,{scale:2.5,backgroundColor:"#fff",useCORS:true}).then(canvas=>{
+    ps.style.cssText="position:fixed;top:-9999px;left:-9999px;width:500px;background:#fff;padding:26px;";
+    canvas.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");a.href=url;a.download=`Mess_${filterMember?filterMember.name:"All"}_${MONTHS[sM]}_${sY}.png`;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    },"image/png");
+  });
+}
+
+// ════════════════════════════════════════════
+// LEAVE ROOM
+// ════════════════════════════════════════════
+function confirmLeave(){
+  if(confirm("Room se exit karo? Data cloud mein save rahega."))leaveRoom();
+}
+function leaveRoom(){
+  localStorage.removeItem("mess_session_v2");
+  clearInterval(syncInterval);
+  location.reload();
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg,cls=""){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(cls||"");
+  t.style.display="block";
+  setTimeout(()=>{t.style.display="none";},2500);
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+initSetup();
+</script>
+</body>
+</html>
